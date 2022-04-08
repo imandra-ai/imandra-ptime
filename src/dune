@@ -1,0 +1,4 @@
+(library
+ (name imandra_datetime)
+ (public_name imandra-datetime)
+ (libraries imandra-prelude ptime))

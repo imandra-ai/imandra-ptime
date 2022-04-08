@@ -1,0 +1,70 @@
+[@@@require "ptime"]
+
+type t = int * int
+(** Picosecond precision POSIX timestamps and time span representation.
+
+    POSIX timestamps and spans are represented by int * int pairs.
+
+    A pair [(d, ps)] denotes the POSIX picosecond duration [d] * 86_400e12 + [ps].
+
+    For a timestamp this can be seen as a POSIX day count from the epoch paired
+    with a picosecond precision POSIX time point in that day starting from
+    00:00:00.
+
+    Note that this representation cannot represent leap seconds. See
+    https://erratique.ch/software/ptime/doc/Ptime/index.html#basics for more
+    information.
+ *)
+
+let epoch = (0, 0)
+let of_d_ps (d, ps) = (d, ps)
+
+module In_picos_ = struct
+  let ps = 1
+  let ns = 1_000
+  let us = 1_000_000
+  let ms = 1_000_000_000
+  let s = 1_000_000_000_000
+  let min = 60_000_000_000_000
+  let hour = 3600_000_000_000_000
+  let day = 86_400_000_000_000_000
+end
+
+module Int_ = struct
+  let compare x y = if x < y then -1 else if x = y then 0 else 1
+end
+
+let is_valid (d, ps) = ps >= 0 && ps < In_picos_.day
+
+module Span = struct
+  let neg = function d, 0 -> (-d, 0) | d, ps -> (-(d + 1), In_picos_.day - ps)
+  let thm_neg_neg t = is_valid t ==> neg (neg t) = t [@@imandra_theorem]
+
+  let add (d0, ps0) (d1, ps1) =
+    let d = d0 + d1 in
+    let ps = ps0 + ps1 in
+    let ps_clamp = ps mod In_picos_.day in
+    let d = d + Int_.compare ps ps_clamp in
+    (d, ps_clamp)
+
+  let thm_add_preserves_is_valid t0 t1 =
+    is_valid t0 && is_valid t1 ==> is_valid (add t0 t1)
+    [@@imandra_theorem]
+
+  let sub t0 t1 = add t0 (neg t1)
+  let abs ((d, _) as s) = if d < 0 then neg s else s
+
+  let thm_abs_preserves_is_valid t = is_valid t ==> is_valid (abs t)
+    [@@imandra_theorem]
+
+  let zero = (0, 0)
+
+  let compare (d0, ps0) (d1, ps1) =
+    let c = Int_.compare d0 d1 in
+    if c <> 0 then c else Int_.compare ps0 ps1
+
+  let equal t0 t1 = compare t0 t1 = 0
+
+  let to_ptime_span (d, ps) = Ptime.Span.v (Z.to_int d, Z.to_int64 ps)
+    [@@program]
+end
