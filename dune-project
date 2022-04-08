@@ -1,5 +1,5 @@
 (lang dune 2.9)
-(name imandra-datetime)
+(name imandra-ptime)
 (generate_opam_files true)
 
 (dialect
@@ -17,6 +17,6 @@
 (homepage "https://imandra.ai")
 
 (package
- (name imandra-datetime)
- (synopsis "Imandra datetime library")
+ (name imandra-ptime)
+ (synopsis "Imandra IML-compatible, verified version of the Ptime library")
  (depends imandra-prelude ptime))
