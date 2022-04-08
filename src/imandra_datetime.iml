@@ -1,5 +1,34 @@
 [@@@require "ptime"]
 
+let jd_to_date jd =
+  let a = jd + 32044 in
+  let b = ((4 * a) + 3) / 146097 in
+  let c = a - (146097 * b / 4) in
+  let d = ((4 * c) + 3) / 1461 in
+  let e = c - (1461 * d / 4) in
+  let m = ((5 * e) + 2) / 153 in
+  let day = e - (((153 * m) + 2) / 5) + 1 in
+  let month = m + 3 - (12 * (m / 10)) in
+  let year = (100 * b) + d - 4800 + (m / 10) in
+  (year, month, day)
+
+let jd_of_date (year, month, day) =
+  let a = (14 - month) / 12 in
+  let y = year + 4800 - a in
+  let m = month + (12 * a) - 3 in
+  day
+  + (((153 * m) + 2) / 5)
+  + (365 * y) + (y / 4) - (y / 100) + (y / 400) - 32045
+
+let jd_posix_epoch = 2_440_588 (* the Julian day of the POSIX epoch *)
+
+let jd_ptime_min = 1_721_060 (* the Julian day of Ptime.min *)
+
+let jd_ptime_max = 5_373_484 (* the Julian day of Ptime.max *)
+
+let day_min = jd_ptime_min - jd_posix_epoch
+let day_max = jd_ptime_max - jd_posix_epoch
+
 type t = int * int
 (** Picosecond precision POSIX timestamps and time span representation.
 
@@ -16,9 +45,6 @@ type t = int * int
     information.
  *)
 
-let epoch = (0, 0)
-let of_d_ps (d, ps) = (d, ps)
-
 module In_picos_ = struct
   let ps = 1
   let ns = 1_000
@@ -29,16 +55,27 @@ module In_picos_ = struct
   let hour = 3600_000_000_000_000
   let day = 86_400_000_000_000_000
 end
+[@@ocaml.warning "-32"]
+
+let epoch = (0, 0) (* 1970-01-01 00:00:00 UTC *)
+
+let min = (day_min, 0) (* 0000-01-01 00:00:00 UTC *)
+
+let max = (day_max, In_picos_.day - 1) (* 9999-12-31 23:59:59 UTC *)
 
 module Int_ = struct
   let compare x y = if x < y then -1 else if x = y then 0 else 1
 end
 
-let is_valid (d, ps) = ps >= 0 && ps < In_picos_.day
+type span = t
 
 module Span = struct
+  let is_valid (_d, ps) = ps >= 0 && ps < In_picos_.day
+  let zero = (0, 0)
   let neg = function d, 0 -> (-d, 0) | d, ps -> (-(d + 1), In_picos_.day - ps)
-  let thm_neg_neg t = is_valid t ==> neg (neg t) = t [@@imandra_theorem]
+
+  let thm_neg_neg t = is_valid t ==> neg (neg t) = t
+    [@@imandra_theorem] [@@ocaml.warning "-32"]
 
   let add (d0, ps0) (d1, ps1) =
     let d = d0 + d1 in
@@ -47,17 +84,37 @@ module Span = struct
     let d = d + Int_.compare ps ps_clamp in
     (d, ps_clamp)
 
+  let thm_add_zero_left_id t = is_valid t ==> add zero t = t
+    [@@imandra_theorem] [@@ocaml.warning "-32"] [@@rw]
+
+  let thm_add_zero_right_id t = is_valid t ==> add t zero = t
+    [@@imandra_theorem] [@@ocaml.warning "-32"] [@@rw]
+
   let thm_add_preserves_is_valid t0 t1 =
     is_valid t0 && is_valid t1 ==> is_valid (add t0 t1)
-    [@@imandra_theorem]
+    [@@imandra_theorem] [@@ocaml.warning "-32"]
 
   let sub t0 t1 = add t0 (neg t1)
   let abs ((d, _) as s) = if d < 0 then neg s else s
 
   let thm_abs_preserves_is_valid t = is_valid t ==> is_valid (abs t)
-    [@@imandra_theorem]
+    [@@imandra_theorem] [@@ocaml.warning "-32"]
 
-  let zero = (0, 0)
+  type t = span
+
+  let of_d_ps (d, ps) = if is_valid (d, ps) then Some (d, ps) else None
+
+  let thm_of_d_ps_valid (d, ps) =
+    match of_d_ps (d, ps) with Some t -> is_valid t | None -> true
+    [@@imandra_theorem] [@@ocaml.warning "-32"]
+
+  let of_int_s secs =
+    let d = Int.abs secs in
+    let s = (d / 86_400, d mod 86_400 * In_picos_.s) in
+    if secs < 0 then neg s else s
+
+  let thm_of_int_s_is_valid secs = is_valid (of_int_s secs)
+    [@@imandra_theorem] [@@ocaml.warning "-32"]
 
   let compare (d0, ps0) (d1, ps1) =
     let c = Int_.compare d0 d1 in
@@ -65,6 +122,133 @@ module Span = struct
 
   let equal t0 t1 = compare t0 t1 = 0
 
-  let to_ptime_span (d, ps) = Ptime.Span.v (Z.to_int d, Z.to_int64 ps)
+  let of_ptime_span s =
+    let d, ps = Ptime.Span.to_d_ps s in
+    (Z.of_int d, Z.of_int64 ps)
+    [@@program]
+
+  let to_ptime_span (d, ps) =
+    if d > Z.of_int max_int then None
+    else Ptime.Span.of_d_ps (Z.to_int d, Z.to_int64 ps)
+    [@@program]
+
+  let pp fmt ((d, ps) as t) =
+    match to_ptime_span t with
+    | None -> Format.fprintf fmt "@[(%a,%a)@]" Z.pp_print d Z.pp_print ps
+    | Some s -> Ptime.Span.pp fmt s
     [@@program]
 end
+
+let is_valid (d, ps) = d >= day_min && d <= day_max && Span.is_valid (d, ps)
+let of_span (s : span) : t option = if is_valid s then Some s else None
+let to_span (t : t) : span = t
+let equal = Span.equal
+let compare = Span.compare
+let is_earlier t ~than = compare t than < 0
+let is_later t ~than = compare t than > 0
+let add_span t d = of_span (Span.add t d)
+let sub_span t d = of_span (Span.sub t d)
+let diff t1 t0 = Span.sub t1 t0
+
+type date = int * int * int
+type time = (int * int * int) * int
+
+let is_leap_year y = y mod 4 = 0 && (y mod 100 <> 0 || y mod 400 = 0)
+
+let days_in_month year (month : int) =
+  match month with
+  | 1 -> 31
+  | 2 -> if is_leap_year year then 29 else 28
+  | 3 -> 31
+  | 4 -> 30
+  | 5 -> 31
+  | 6 -> 30
+  | 7 -> 31
+  | 8 -> 31
+  | 9 -> 30
+  | 10 -> 31
+  | 11 -> 30
+  | _ -> 31
+
+let is_date_valid (y, m, d) =
+  1 <= m && m <= 12 && 1 <= d && d <= days_in_month y m
+
+let is_time_valid ((hh, mm, ss), _) =
+  0 <= hh && hh <= 23 && 0 <= mm && mm <= 59 && 0 <= ss && ss <= 60
+
+let of_date_time (date, (((hh, mm, ss), tz_offset_s) as t)) =
+  (* We first verify that the given date and time are Ptime-valid.
+     Once this has been established we find find the number of Julian
+     days since the epoch for the given proleptic Georgian calendar
+     date. This gives us the POSIX day component of the timestamp. The
+     remaining time fields are used to derive the picosecond precision
+     time in that day compensated by the time zone offset. The final
+     result is checked to be in Ptime's [min;max] range.
+
+     By definition POSIX timestamps cannot represent leap seconds.
+     With the code below any date-time with a seconds value of 60
+     (leap second addition) is mapped to the POSIX timestamp that
+     happens 1 second later which is what POSIX mktime would to. Any
+     formally non-existing UTC date-time with a seconds value of 59
+     (leap second subtraction) is mapped on the POSIX timestamp that
+     represents this non existing instant. *)
+  if not (is_date_valid date && is_time_valid t) then None
+  else
+    let d = jd_of_date date - jd_posix_epoch in
+    let hh_ps = hh * In_picos_.hour in
+    let mm_ps = mm * In_picos_.min in
+    let ss_ps = ss * In_picos_.s in
+    let ps = hh_ps + mm_ps + ss_ps in
+    sub_span (d, ps) (Span.of_int_s tz_offset_s)
+
+let to_date_time ?(tz_offset_s = 0) t =
+  (* To render the timestamp in the given time zone offset we first
+     express the timestamp in local time and then compute the date
+     fields on that stamp as if it were UTC. If the local timestamp is
+     not in [min;max] then its date fields cannot be valid according
+     to the constraints guaranteed by Ptime and we fallback to UTC,
+     i.e. a time zone offset of 0.
+
+     We then apply the following algorithm whose description makes
+     sense on a POSIX timestamp (i.e. UTC) but works equally well to
+     render the date-time fields of a local timestamp.
+
+     We first take take the POSIX day count [d] (equivalent by
+     definition to an UTC day count) from the epoch, convert it to a
+     Julian day and use this to get the proleptic Gregorian calendar
+     date. The POSIX picoseconds [ps] in the day are are converted to
+     a daytime according to to its various units.
+
+     By definition no POSIX timestamp can represent a date-time with a
+     seconds value of 60 (leap second addition) and thus the function
+     will never return a date-time with such a value.  On the other
+     hand it will return an inexisting UTC date-time with a seconds
+     value of 59 whenever a leap second is subtracted since there is a
+     POSIX timestamp that represents this instant. *)
+  let (d, ps), tz_offset_s =
+    match add_span t (Span.of_int_s tz_offset_s) with
+    | None -> (t, 0) (* fallback to UTC *)
+    | Some local -> (local, tz_offset_s)
+  in
+  let jd = d + jd_posix_epoch in
+  let date = jd_to_date jd in
+  let hh = ps / In_picos_.hour in
+  let hh_rem = ps mod In_picos_.hour in
+  let mm = hh_rem / In_picos_.min in
+  let mm_rem = hh_rem mod In_picos_.min in
+  let ss = mm_rem / In_picos_.s in
+  (date, ((hh, mm, ss), tz_offset_s))
+
+let thm_to_of_date_time ((_d, ps) as t) =
+  ps mod In_picos_.s = 0
+  && is_valid t
+     ==>
+     let dt = to_date_time t in
+     match of_date_time dt with Some t' -> t = t' | None -> false
+  [@@ocaml.warning "-32"]
+
+let thm_of_to_date_time ((_, (_, tz_offset_s)) as dt) =
+  match of_date_time dt with
+  | Some t -> to_date_time ~tz_offset_s t = dt
+  | None -> true
+  [@@ocaml.warning "-32"]

@@ -1,8 +1,8 @@
 build:
-	dune build @install
+	opam exec -- dune build @install
 
 format:
-	dune build @fmt --auto-promote || true
+	opam exec -- dune build @fmt --auto-promote || true
 
 _opam:
 	opam switch create . --empty
