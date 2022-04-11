@@ -1,5 +1,7 @@
 [@@@import "./imandra_ptime.iml"]
 
+open Imandra_ptime
+
 let thm_to_of_date_time ((_d, ps) as t) =
   ps mod In_picos_.s = 0 (* time tuple only has seconds precision *)
   && is_valid t
