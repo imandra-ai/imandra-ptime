@@ -98,9 +98,6 @@ module Span = struct
   let zero = (0, 0)
   let neg = function d, 0 -> (-d, 0) | d, ps -> (-(d + 1), In_picos_.day - ps)
 
-  let thm_neg_neg t = is_valid t ==> neg (neg t) = t
-    [@@imandra_theorem] [@@ocaml.warning "-32"]
-
   let add (d0, ps0) (d1, ps1) =
     let d = d0 + d1 in
     let ps = ps0 + ps1 in
@@ -108,37 +105,17 @@ module Span = struct
     let d = d + Int_.compare ps ps_clamp in
     (d, ps_clamp)
 
-  let thm_add_zero_left_id t = is_valid t ==> add zero t = t
-    [@@imandra_theorem] [@@ocaml.warning "-32"] [@@rw]
-
-  let thm_add_zero_right_id t = is_valid t ==> add t zero = t
-    [@@imandra_theorem] [@@ocaml.warning "-32"] [@@rw]
-
-  let thm_add_preserves_is_valid t0 t1 =
-    is_valid t0 && is_valid t1 ==> is_valid (add t0 t1)
-    [@@imandra_theorem] [@@ocaml.warning "-32"]
-
   let sub t0 t1 = add t0 (neg t1)
   let abs ((d, _) as s) = if d < 0 then neg s else s
-
-  let thm_abs_preserves_is_valid t = is_valid t ==> is_valid (abs t)
-    [@@imandra_theorem] [@@ocaml.warning "-32"]
 
   type t = span
 
   let of_d_ps (d, ps) = if is_valid (d, ps) then Some (d, ps) else None
 
-  let thm_of_d_ps_valid (d, ps) =
-    match of_d_ps (d, ps) with Some t -> is_valid t | None -> true
-    [@@imandra_theorem] [@@ocaml.warning "-32"]
-
   let of_int_s secs =
     let d = Int.abs secs in
     let s = (d / 86_400, d mod 86_400 * In_picos_.s) in
     if secs < 0 then neg s else s
-
-  let thm_of_int_s_is_valid secs = is_valid (of_int_s secs)
-    [@@imandra_theorem] [@@ocaml.warning "-32"]
 
   let compare (d0, ps0) (d1, ps1) =
     let c = Int_.compare d0 d1 in
@@ -262,17 +239,3 @@ let to_date_time ?(tz_offset_s = 0) t =
   let mm_rem = hh_rem mod In_picos_.min in
   let ss = mm_rem / In_picos_.s in
   (date, ((hh, mm, ss), tz_offset_s))
-
-let thm_to_of_date_time ((_d, ps) as t) =
-  ps mod In_picos_.s = 0
-  && is_valid t
-     ==>
-     let dt = to_date_time t in
-     match of_date_time dt with Some t' -> t = t' | None -> false
-  [@@ocaml.warning "-32"]
-
-let thm_of_to_date_time ((_, (_, tz_offset_s)) as dt) =
-  match of_date_time dt with
-  | Some t -> to_date_time ~tz_offset_s t = dt
-  | None -> true
-  [@@ocaml.warning "-32"]

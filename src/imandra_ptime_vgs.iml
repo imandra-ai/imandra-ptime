@@ -1,0 +1,18 @@
+[@@@import "./imandra_ptime.iml"]
+
+let thm_to_of_date_time ((_d, ps) as t) =
+  ps mod In_picos_.s = 0 (* time tuple only has seconds precision *)
+  && is_valid t
+     ==>
+     let dt = to_date_time t in
+     match of_date_time dt with Some t' -> t = t' | None -> true
+  [@@imandra_theorem] [@@ocaml.warning "-32"]
+
+let thm_of_to_date_time ((_date, ((_hh, _mm, ss), tz_offset_s)) as dt) =
+  ss <> 60
+  (* ptime cannot represent leap seconds *)
+  ==>
+  match of_date_time dt with
+  | Some t -> to_date_time ~tz_offset_s t = dt
+  | None -> true
+  [@@ocaml.warning "-32"]
