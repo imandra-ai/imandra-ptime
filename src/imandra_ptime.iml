@@ -141,7 +141,10 @@ module Span = struct
 end
 
 let is_valid (d, ps) = d >= day_min && d <= day_max && Span.is_valid (d, ps)
-let of_span (s : span) : t option = if is_valid s then Some s else None
+
+let of_span ((d, _) as span : span) : t option =
+  if d < day_min || d > day_max then None else Some span
+
 let to_span (t : t) : span = t
 let equal = Span.equal
 let compare = Span.compare
@@ -172,7 +175,7 @@ let days_in_month year (month : int) =
   | _ -> 31
 
 let is_date_valid (y, m, d) =
-  1 <= m && m <= 12 && 1 <= d && d <= days_in_month y m
+  0 <= y && y <= 9999 && 1 <= m && m <= 12 && 1 <= d && d <= days_in_month y m
 
 let is_time_valid ((hh, mm, ss), _) =
   0 <= hh && hh <= 23 && 0 <= mm && mm <= 59 && 0 <= ss && ss <= 60
