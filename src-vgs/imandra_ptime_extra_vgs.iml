@@ -1,0 +1,9 @@
+[@@@import "../src-extra/imandra_ptime_extra.iml"]
+
+open Imandra_ptime_extra
+open Span
+
+let thm_of_int_ms_is_valid secs = is_valid (of_int_ms secs) [@@imandra_theorem]
+let thm_of_int_us_is_valid secs = is_valid (of_int_us secs) [@@imandra_theorem]
+let thm_of_int_ns_is_valid secs = is_valid (of_int_ns secs) [@@imandra_theorem]
+let thm_of_int_ps_is_valid secs = is_valid (of_int_ps secs) [@@imandra_theorem]

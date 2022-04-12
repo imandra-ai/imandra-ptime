@@ -87,6 +87,7 @@ let ps_count_in_s = 1_000_000_000_000 [@@ocaml.warning "-32"]
 let ps_count_in_min = 60_000_000_000_000 [@@ocaml.warning "-32"]
 let ps_count_in_hour = 3600_000_000_000_000 [@@ocaml.warning "-32"]
 let ps_count_in_day = 86_400_000_000_000_000 [@@ocaml.warning "-32"]
+let s_count_in_day = 86_400
 let ps_day_max = 86_399_999_999_999_999
 let day_min = jd_ptime_min - jd_posix_epoch
 let day_max = jd_ptime_max - jd_posix_epoch
@@ -136,13 +137,13 @@ module Span = struct
   let unsafe_of_d_ps_option s = s
   let to_d_ps s = s
 
-  let of_z_s secs =
+  let of_int_s secs =
     let d = stdlib_abs secs in
-    let s = (d / 86_400, d mod 86_400 * ps_count_in_s) in
+    let s = (d / s_count_in_day, d mod s_count_in_day * ps_count_in_s) in
     if secs < 0 then neg s else s
 
-  let to_z_s (d, ps) =
-    let days_s = d * 86_400 in
+  let to_int_s (d, ps) =
+    let days_s = d * s_count_in_day in
     let day_s = ps / ps_count_in_s in
     let secs = days_s + day_s in
     secs
@@ -298,7 +299,7 @@ let of_date_time (date, (((hh, mm, ss), tz_offset_s) as t)) =
     let mm_ps = mm * ps_count_in_min in
     let ss_ps = ss * ps_count_in_s in
     let ps = hh_ps + (mm_ps + ss_ps) in
-    sub_span (d, ps) (Span.of_z_s tz_offset_s)
+    sub_span (d, ps) (Span.of_int_s tz_offset_s)
 
 let to_date_time ?(tz_offset_s = 0) t =
   (* To render the timestamp in the given time zone offset we first
@@ -325,7 +326,7 @@ let to_date_time ?(tz_offset_s = 0) t =
      value of 59 whenever a leap second is subtracted since there is a
      POSIX timestamp that represents this instant. *)
   let (d, ps), tz_offset_s =
-    match add_span t (Span.of_z_s tz_offset_s) with
+    match add_span t (Span.of_int_s tz_offset_s) with
     | None -> (t, 0) (* fallback to UTC *)
     | Some local -> (local, tz_offset_s)
   in
@@ -356,7 +357,7 @@ let weekday =
     | _ -> Wed
   in
   fun ?(tz_offset_s = 0) t ->
-    let d, _ = Span.add t (Span.of_z_s tz_offset_s) in
+    let d, _ = Span.add t (Span.of_int_s tz_offset_s) in
     (* N.B. in contrast to [to_date_time] we don't care if we fall outside
        [min;max]. Even if it happens the result of the computation is still
        correct *)

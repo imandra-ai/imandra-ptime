@@ -1,0 +1,63 @@
+(* imandra-ptime-extra
+
+   Matt Bray, Imandra Inc
+   Copyright (c) 2022
+*)
+
+[@@@import "../src/imandra_ptime.iml"]
+
+type t = Imandra_ptime.t
+type span = Imandra_ptime.span
+
+open Imandra_ptime
+
+let ps_count_in_ps = 1
+let ps_count_in_ns = 1_000
+let ps_count_in_us = 1_000_000
+let ps_count_in_ms = 1_000_000_000
+let ms_count_in_day = 86_400_000
+let us_count_in_day = 86_400_000_000
+let ns_count_in_day = 86_400_000_000_000
+let ps_count_in_day = 86_400_000_000_000_000
+
+(** Ptimes created by the smart constructors are valid, but we need an explicit
+    is_valid function for Imandra instances and theorems.
+ *)
+let is_valid t =
+  let day, ps = to_span t |> Span.to_d_ps in
+  let day_min, ps_min = to_span min |> Span.to_d_ps in
+  let day_max, ps_max = to_span max |> Span.to_d_ps in
+  day_min <= day && day <= day_max && ps_min <= ps && ps <= ps_max
+
+module Span = struct
+  let stdlib_abs = abs
+
+  open Imandra_ptime.Span
+
+  let is_valid s =
+    let _day, ps = to_d_ps s in
+    let _day_min, ps_min = to_span min |> to_d_ps in
+    let _day_max, ps_max = to_span max |> to_d_ps in
+    ps_min <= ps && ps <= ps_max
+
+  let of_int_x (x_count_in_day, ps_count_in_x) x =
+    let d = stdlib_abs x in
+    let s = (d / x_count_in_day, d mod x_count_in_day * ps_count_in_x) in
+    let s = unsafe_of_d_ps s in
+    if x < 0 then neg s else s
+
+  let to_int_x (x_count_in_day, ps_count_in_x) s =
+    let d, ps = to_d_ps s in
+    let days_x = d * x_count_in_day in
+    let day_x = ps / ps_count_in_x in
+    days_x + day_x
+
+  let of_int_ms = of_int_x (ms_count_in_day, ps_count_in_ms)
+  let to_int_ms = to_int_x (ms_count_in_day, ps_count_in_ms)
+  let of_int_us = of_int_x (us_count_in_day, ps_count_in_us)
+  let to_int_us = to_int_x (us_count_in_day, ps_count_in_us)
+  let of_int_ns = of_int_x (ns_count_in_day, ps_count_in_ns)
+  let to_int_ns = to_int_x (ns_count_in_day, ps_count_in_ns)
+  let of_int_ps = of_int_x (ps_count_in_day, ps_count_in_ps)
+  let to_int_ps = to_int_x (ps_count_in_day, ps_count_in_ps)
+end

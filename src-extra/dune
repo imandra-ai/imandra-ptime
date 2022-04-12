@@ -1,0 +1,4 @@
+(library
+ (name imandra_ptime_extra)
+ (public_name imandra-ptime.extra)
+ (libraries imandra-ptime imandra-prelude))

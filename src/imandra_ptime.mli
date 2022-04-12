@@ -62,20 +62,16 @@ module Span : sig
       POSIX picosecond span [d] * 86_400e12 + [ps] with
       [ps] in the range \[[0];[86_399_999_999_999_999L]\] *)
 
-  val of_z_s : Z.t -> span
-  (** [of_z_s secs] is a span from the signed integer POSIX second
+  val of_int_s : Z.t -> span
+  (** [of_int_s secs] is a span from the signed integer POSIX second
       span [secs].
-
-      For [of_int_s] and [of_float_s], use [Ptime.Span] directly.
    *)
 
-  val to_z_s : span -> Z.t
-  (** [to_z_s d] is the span [d] as a signed integer POSIX second
+  val to_int_s : span -> Z.t
+  (** [to_int_s d] is the span [d] as a signed integer POSIX second
       span, if [int]'s range can represent it (note that this
       depends on {!Sys.word_size}). Subsecond precision numbers are
       truncated.
-
-      For [to_int_s] and [to_float_s], use [Ptime.Span] directly.
    *)
 
   (** {1:predicates Predicates} *)
