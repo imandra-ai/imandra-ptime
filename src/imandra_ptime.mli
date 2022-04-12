@@ -40,15 +40,10 @@ module Span : sig
   type t = span
   (** The type for signed, picosecond precision, POSIX time spans. *)
 
-  val v : int * int64 -> span
-  (** [v s] is like {!of_d_ps}[ s] but raises [Invalid_argument] if
-      [s] is not in the right range. Use {!of_d_ps} to deal with
-      untrusted input. *)
-
   val zero : span
   (** [zero] is the neutral element of {!add}. *)
 
-  val of_d_ps : int * int64 -> span option
+  val of_d_ps : Z.t * Z.t -> span option
   (** [of_d_ps (d, ps)] is a span for the signed POSIX picosecond
       span [d] * 86_400e12 + [ps]. [d] is a signed number of POSIX
       days and [ps] a number of picoseconds in the range
@@ -57,48 +52,38 @@ module Span : sig
 
   (**/**)
 
-  val unsafe_of_d_ps : int * int64 -> span
-  val unsafe_of_d_ps_option : (int * int64) option -> span option
+  val unsafe_of_d_ps : Z.t * Z.t -> span
+  val unsafe_of_d_ps_option : (Z.t * Z.t) option -> span option
 
   (**/**)
 
-  val to_d_ps : span -> int * int64
+  val to_d_ps : span -> Z.t * Z.t
   (** [to_d_ps d] is the span [d] as a pair [(d, ps)] expressing the
       POSIX picosecond span [d] * 86_400e12 + [ps] with
       [ps] in the range \[[0];[86_399_999_999_999_999L]\] *)
 
-  val of_int_s : int -> span
-  (** [of_int_s secs] is a span from the signed integer POSIX second
-      span [secs]. *)
+  val of_z_s : Z.t -> span
+  (** [of_z_s secs] is a span from the signed integer POSIX second
+      span [secs].
 
-  val to_int_s : span -> int option
-  (** [to_int_s d] is the span [d] as a signed integer POSIX second
+      For [of_int_s] and [of_float_s], use [Ptime.Span] directly.
+   *)
+
+  val to_z_s : span -> Z.t
+  (** [to_z_s d] is the span [d] as a signed integer POSIX second
       span, if [int]'s range can represent it (note that this
       depends on {!Sys.word_size}). Subsecond precision numbers are
-      truncated. *)
+      truncated.
 
-  val of_float_s : float -> span option
-  (** [of_float_s secs] is a span from the signed floating point POSIX
-      second span [d]. Subpicosecond precision numbers are truncated.
-
-      [None] is returned if [secs] cannot be represented as a span.
-      This occurs on {!Stdlib.nan} or if the duration in POSIX
-      days cannot fit on an [int] (on 32-bit platforms this means the
-      absolute magnitude of the duration is greater than ~2'941'758
-      years). *)
-
-  val to_float_s : span -> float
-  (** [to_float_s s] is the span [d] as floating point POSIX seconds.
-
-      {b Warning.} The magnitude of [s] may not be represented exactly
-      by the floating point value. *)
+      For [to_int_s] and [to_float_s], use [Ptime.Span] directly.
+   *)
 
   (** {1:predicates Predicates} *)
 
   val equal : span -> span -> bool
   (** [equal d d'] is [true] iff [d] and [d'] are the same time span. *)
 
-  val compare : span -> span -> int
+  val compare : span -> span -> Z.t
   (** [compare d d'] is a total order on durations that is compatible
       with signed time span order. *)
 
@@ -120,12 +105,12 @@ module Span : sig
 
   (** {1:rounding Rounding} *)
 
-  val round : frac_s:int -> span -> span
+  val round : frac_s:Z.t -> span -> span
   (** [round ~frac_s t] is [t] rounded to the [frac_s] decimal
       fractional second. Ties are rounded away from zero.  [frac_s] is
       clipped to the range \[[0];[12]\]. *)
 
-  val truncate : frac_s:int -> span -> span
+  val truncate : frac_s:Z.t -> span -> span
   (** [truncate ~frac_s t] is [t] truncated to the [frac_s] decimal
       fractional second. [frac_s] is clipped to the range
       \[[0];[12]\]. *)
@@ -158,6 +143,9 @@ module Span : sig
   val dump : Format.formatter -> span -> unit
   (** [dump ppf s] prints an unspecified raw representation of [d]
       on [ppf]. *)
+
+  val of_ptime_span : Ptime.Span.t -> span
+  val to_ptime_span : span -> Ptime.Span.t
 end
 
 (** {1:timestamps POSIX timestamps} *)
@@ -166,11 +154,6 @@ type t
 (** The type for picosecond precision POSIX timestamps in the range
     \[{!min};{!max}\]. Note that POSIX timestamps, and hence values of
     this type, are by definition always on the UTC timeline. *)
-
-val v : int * int64 -> t
-(** [v s] is [of_span (Span.v s)] but raise [Invalid_argument] if [s]
-    is not in the right range. Use {!Span.of_d_ps} and {!of_span}
-    to deal with untrusted input. *)
 
 val epoch : t
 (** [epoch] is 1970-01-01 00:00:00 UTC. *)
@@ -200,27 +183,16 @@ val to_span : t -> span
     {- If the number is positive [t] happens {e after} {!epoch}.}
     {- If the number is negative [t] happens {e before} {!epoch}.}} *)
 
+val of_ptime : Ptime.t -> t
+val to_ptime : t -> Ptime.t
+
 (**/**)
 
-val unsafe_of_d_ps : int * int64 -> t
+val unsafe_of_d_ps : Z.t * Z.t -> t
 
 (**/**)
 
-val of_float_s : float -> t option
-(** [of_float_s d] is like {!of_span} but with [d] as a floating point
-    second POSIX span [d]. This function is compatible with the result
-    of {!Unix.gettimeofday}. Decimal fractional seconds beyond [1e-12]
-    are truncated. *)
-
-val to_float_s : t -> float
-(** [to_float_s t] is like {!to_span} but returns a floating point second
-    POSIX span.
-
-    {b Warning.} Due to floating point inaccuracies do not expect the
-    function to round trip with {!of_float_s}; especially near
-    {!Ptime.min} and {!Ptime.max}. *)
-
-val truncate : frac_s:int -> t -> t
+val truncate : frac_s:Z.t -> t -> t
 (** [truncate ~frac_s t] is [t] truncated to the [frac_s] decimal
     fractional second. Effectively this reduces precision without
     rounding, the timestamp remains in the second it is in. [frac_s]
@@ -234,7 +206,7 @@ val frac_s : t -> span
 val equal : t -> t -> bool
 (** [equal t t'] is [true] iff [t] and [t'] are the same timestamps. *)
 
-val compare : t -> t -> int
+val compare : t -> t -> Z.t
 (** [compare t t'] is a total order on timestamps that is compatible
     with timeline order. *)
 
@@ -267,7 +239,7 @@ val diff : t -> t -> span
 
 (** {1:tz_offset Time zone offsets between local and UTC timelines} *)
 
-type tz_offset_s = int
+type tz_offset_s = Z.t
 (** The type for time zone offsets between local and UTC timelines
     in seconds. This is the signed difference in seconds between the local
     timeline and the UTC timeline:
@@ -287,7 +259,7 @@ type tz_offset_s = int
     daytime in a local timeline with stated relationship to the UTC
     timeline. *)
 
-type date = int * int * int
+type date = Z.t * Z.t * Z.t
 (** The type for big-endian proleptic Gregorian dates. A triple
     [(y, m, d)] with:
     {ul
@@ -303,7 +275,7 @@ type date = int * int * int
     in the range mentioned above and represent an existing date in the
     proleptic Gregorian calendar. *)
 
-type time = (int * int * int) * tz_offset_s
+type time = (Z.t * Z.t * Z.t) * tz_offset_s
 (** The type for daytimes on a local timeline. Pairs a triple [(hh,
     mm, ss)] denoting the time on the local timeline and a [tz_offset]
     stating the {{!tz_offset_s}relationship} of the local timeline to
@@ -365,10 +337,9 @@ val of_date : date -> t option
 val to_date : t -> date
 (** [to_date t] is [fst (to_date_time t)]. *)
 
-val weekday :
-  ?tz_offset_s:tz_offset_s ->
-  t ->
-  [ `Mon | `Tue | `Wed | `Thu | `Fri | `Sat | `Sun ]
+type weekday = Thu | Fri | Sat | Sun | Mon | Tue | Wed
+
+val weekday : ?tz_offset_s:tz_offset_s -> t -> weekday
 (** [weekday ~tz_offset_s t] is the day in the 7-day week of timestamp [t]
     expressed in the time zone offset [ts_offset_s] (defaults to [0]).
 
@@ -377,22 +348,12 @@ val weekday :
 
 (** {1:rfc3339 RFC 3339 timestamp conversions} *)
 
-type error_range = int * int
-(** The type for error ranges, starting and ending position. *)
-
-type rfc3339_error =
-  [ `Invalid_stamp | `Eoi | `Exp_chars of char list | `Trailing_input ]
-(** The type for RFC 3339 timestamp parsing errors.  [`Invalid_stamp]
-    means that either the time stamp is not in the range
-    \[{!min};{!max}\], or the date is invalid, or one of the fields is
-    not in the right range. *)
-
-val pp_rfc3339_error : Format.formatter -> rfc3339_error -> unit
+val pp_rfc3339_error : Format.formatter -> Ptime.rfc3339_error -> unit
 (** [pp_rfc3339_error ppf e] prints an unspecified representation of
     [e] on [ppf]. *)
 
 val rfc3339_error_to_msg :
-  ('a, [ `RFC3339 of error_range * rfc3339_error ]) result ->
+  ('a, [ `RFC3339 of Ptime.error_range * Ptime.rfc3339_error ]) result ->
   ('a, [> `Msg of string ]) result
 (** [rfc3339_error_to_msg r] converts RFC 3339 parse errors to error
     messages. *)
@@ -403,7 +364,7 @@ val of_rfc3339 :
   ?start:int ->
   string ->
   ( t * tz_offset_s option * int,
-    [> `RFC3339 of error_range * rfc3339_error ] )
+    [> `RFC3339 of Ptime.error_range * Ptime.rfc3339_error ] )
   result
 (** [of_rfc3339 ~strict ~sub ~start s] parses an RFC 3339
     {{:https://tools.ietf.org/html/rfc3339#section-5.6}[date-time]}
