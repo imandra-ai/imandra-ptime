@@ -1,0 +1,30 @@
+[@@@import "../src/imandra_ptime.iml"]
+
+open Imandra_ptime
+open Span
+
+let is_valid (d, ps) =
+  0 <= ps && ps <= ps_day_max
+
+let thm_neg_neg t = is_valid t ==> neg (neg t) = t
+  [@@imandra_theorem]
+
+let thm_add_zero_left_id t = is_valid t ==> add zero t = t
+  [@@imandra_theorem]
+
+let thm_add_zero_right_id t = is_valid t ==> add t zero = t
+  [@@imandra_theorem]
+
+let thm_add_preserves_is_valid t0 t1 =
+  is_valid t0 && is_valid t1 ==> is_valid (add t0 t1)
+  [@@imandra_theorem]
+
+let thm_abs_preserves_is_valid t = is_valid t ==> is_valid (abs t)
+  [@@imandra_theorem]
+
+let thm_of_d_ps_valid (d, ps) =
+  match of_d_ps (d, ps) with Some t -> is_valid t | None -> true
+  [@@imandra_theorem]
+
+let thm_of_z_s_is_valid secs = is_valid (of_z_s secs)
+  [@@imandra_theorem]

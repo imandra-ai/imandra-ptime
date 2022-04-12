@@ -1,0 +1,43 @@
+[@@@import "../src/imandra_ptime.iml"]
+
+open Imandra_ptime
+
+let is_valid (d, ps) =
+  day_min <= d && d <= day_max &&
+  0 <= ps && ps <= ps_day_max
+
+
+let to_of_date_time ((_d, ps) as t) =
+  ps mod ps_count_in_s = 0 (* time tuple only has seconds precision *)
+  && is_valid t
+     ==>
+     let dt = to_date_time t in
+     match of_date_time dt with Some t' -> t = t' | None -> false
+  [@@imandra_theorem]
+
+let of_to_date_time ((_date, ((_hh, _mm, ss), tz_offset_s)) as dt) =
+  match of_date_time dt with
+  | Some t when ss = 60 ->
+     (* ptime cannot represent leap seconds.
+
+        After a round trip converting to ptime and back,
+
+            ((2300, 12, 24), ((23, 59, 60), 3600))
+
+        becomes
+
+            ((2300, 12, 25), ((0, 0, 0), 3600))
+
+        To compensate, we'll adjust the tz_offset_s by one second when
+        converting back from ptime to datetime, then modify seconds and
+        tz_offset_s to match the original datetime input.
+      *)
+     let (d', ((hh', mm', ss'), tz_offset_s')) =
+       to_date_time ~tz_offset_s:(tz_offset_s - 1) t
+     in
+     (* incr ss and tz_offset_s to match the original input *)
+     let dt' = (d', ((hh', mm', ss' + 1), tz_offset_s' + 1)) in
+     dt' = dt
+  | Some t -> to_date_time ~tz_offset_s t = dt
+  | None -> true
+  (* [@@imandra_theorem] *)
