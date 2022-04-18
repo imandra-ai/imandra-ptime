@@ -1,22 +1,37 @@
 [@@@import "../src/imandra_ptime.iml"]
+[@@@import "../src-extra/imandra_ptime_extra.iml"]
 
 open Imandra_ptime
 open Span
 
-let is_valid (d, ps) = 0 <= ps && ps <= ps_day_max
-let thm_neg_neg t = is_valid t ==> neg (neg t) = t [@@imandra_theorem]
-let thm_add_zero_left_id t = is_valid t ==> add zero t = t [@@imandra_theorem]
-let thm_add_zero_right_id t = is_valid t ==> add t zero = t [@@imandra_theorem]
+let is_valid = Imandra_ptime_extra.Span.is_valid
+let neg_zero = neg zero = zero [@@imandra_theorem]
+let neg_neg t = is_valid t ==> neg (neg t) = t [@@imandra_theorem]
+let add_zero_left_id t = is_valid t ==> add zero t = t [@@imandra_theorem]
+let add_zero_right_id t = is_valid t ==> add t zero = t [@@imandra_theorem]
+let add_neg_zero t = add t (neg t) = zero [@@imandra_theorem]
+let add_comm t u = add t u = add u t [@@imandra_theorem]
 
-let thm_add_preserves_is_valid t0 t1 =
+let add_assoc t u v =
+  is_valid t && is_valid u && is_valid v ==> add (add t u) v = add t (add u v)
+  [@@imandra_theorem]
+
+let add_zero_neg t = is_valid t ==> add zero (neg t) = neg (add zero t)
+  [@@imandra_theorem]
+
+let add_preserves_is_valid t0 t1 =
   is_valid t0 && is_valid t1 ==> is_valid (add t0 t1)
   [@@imandra_theorem]
 
-let thm_abs_preserves_is_valid t = is_valid t ==> is_valid (abs t)
+let abs_preserves_is_valid t = is_valid t ==> is_valid (abs t)
   [@@imandra_theorem]
 
-let thm_of_d_ps_valid (d, ps) =
+let of_d_ps_valid (d, ps) =
   match of_d_ps (d, ps) with Some t -> is_valid t | None -> true
   [@@imandra_theorem]
 
-let thm_of_int_s_is_valid secs = is_valid (of_int_s secs) [@@imandra_theorem]
+let of_int_s_is_valid secs = is_valid (of_int_s secs) [@@imandra_theorem]
+
+let compare_trans t1 t2 t3 =
+  compare t1 t2 = compare t2 t3 ==> compare t1 t2 = compare t1 t3
+  [@@imandra_theorem]
