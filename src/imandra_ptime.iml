@@ -250,10 +250,9 @@ type tz_offset_s = int
 type date = int * int * int
 type time = (int * int * int) * tz_offset_s
 
-let max_month_day =
+let max_month_day y m =
   (* max day number in a given year's month. *)
   let is_leap_year y = y mod 4 = 0 && (y mod 100 <> 0 || y mod 400 = 0) in
-  fun y m ->
     match m with
     | 1 -> 31
     | 2 when is_leap_year y -> 29
@@ -344,7 +343,7 @@ let to_date t = fst (to_date_time ~tz_offset_s:0 t)
 
 type weekday = Thu | Fri | Sat | Sun | Mon | Tue | Wed
 
-let weekday =
+let weekday ?(tz_offset_s = 0) t =
   let wday = (* Epoch was a thursday *)
     function
     | 0 -> Thu
@@ -356,13 +355,12 @@ let weekday =
     | 6 -> Wed
     | _ -> Wed
   in
-  fun ?(tz_offset_s = 0) t ->
-    let d, _ = Span.add t (Span.of_int_s tz_offset_s) in
-    (* N.B. in contrast to [to_date_time] we don't care if we fall outside
-       [min;max]. Even if it happens the result of the computation is still
-       correct *)
-    let i = d mod 7 in
-    wday (if i < 0 then 7 + i else i)
+  let d, _ = Span.add t (Span.of_int_s tz_offset_s) in
+  (* N.B. in contrast to [to_date_time] we don't care if we fall outside
+      [min;max]. Even if it happens the result of the computation is still
+      correct *)
+  let i = d mod 7 in
+  wday (if i < 0 then 7 + i else i)
 
 (* RFC 3339 timestamp conversions *)
 
