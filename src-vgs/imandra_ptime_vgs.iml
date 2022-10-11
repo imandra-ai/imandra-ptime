@@ -1,4 +1,4 @@
-[@@@import "../src/imandra_ptime.iml"]
+[@@@require "imandra-ptime"]
 
 open Imandra_ptime
 
