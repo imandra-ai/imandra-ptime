@@ -2,3 +2,7 @@
  (name imandra_ptime_extra)
  (public_name imandra-ptime.extra)
  (libraries imandra-ptime imandra-prelude))
+
+(install
+ (section lib)
+ (files (imandra-ptime.extra.iml as extra/imandra-ptime.extra.iml)))

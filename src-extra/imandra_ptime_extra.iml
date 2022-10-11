@@ -4,7 +4,7 @@
    Copyright (c) 2022
 *)
 
-[@@@import "../src/imandra_ptime.iml"]
+[@@@require "imandra-ptime"]
 
 type t = Imandra_ptime.t
 type span = Imandra_ptime.span
