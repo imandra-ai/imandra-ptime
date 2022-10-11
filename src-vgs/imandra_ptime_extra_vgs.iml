@@ -1,4 +1,4 @@
-[@@@import "../src-extra/imandra_ptime_extra.iml"]
+[@@@require "imandra-ptime.extra"]
 
 open Imandra_ptime_extra
 open Span
