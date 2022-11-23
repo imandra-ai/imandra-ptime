@@ -1,9 +1,5 @@
 (library
  (name imandra_ptime)
  (public_name imandra-ptime)
- (modules :standard \ imandra-ptime)
+ (modules imandra_ptime)
  (libraries imandra-prelude ptime))
-
-(install
- (section lib)
- (files imandra-ptime.iml))
