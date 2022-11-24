@@ -8,6 +8,7 @@
 
 type t = Imandra_ptime.t
 type span = Imandra_ptime.span
+type time = Imandra_ptime.time
 
 open Imandra_ptime
 
@@ -15,6 +16,7 @@ let ps_count_in_ps = 1
 let ps_count_in_ns = 1_000
 let ps_count_in_us = 1_000_000
 let ps_count_in_ms = 1_000_000_000
+let ps_count_in_s = 1_000_000_000_000
 let ms_count_in_day = 86_400_000
 let us_count_in_day = 86_400_000_000
 let ns_count_in_day = 86_400_000_000_000
@@ -52,6 +54,8 @@ module Span = struct
     let day_x = ps / ps_count_in_x in
     days_x + day_x
 
+  let of_int_s = of_int_s
+  let to_int_s = to_int_s
   let of_int_ms = of_int_x (ms_count_in_day, ps_count_in_ms)
   let to_int_ms = to_int_x (ms_count_in_day, ps_count_in_ms)
   let of_int_us = of_int_x (us_count_in_day, ps_count_in_us)
@@ -60,4 +64,7 @@ module Span = struct
   let to_int_ns = to_int_x (ns_count_in_day, ps_count_in_ns)
   let of_int_ps = of_int_x (ps_count_in_day, ps_count_in_ps)
   let to_int_ps = to_int_x (ps_count_in_day, ps_count_in_ps)
+
+  let is_shorter t ~than = compare t than = -1
+  let is_longer t ~than = compare t than = 1
 end
