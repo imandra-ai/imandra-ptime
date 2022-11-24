@@ -1,6 +1,9 @@
 build:
 	opam exec -- dune build @install
 
+install: build
+	opam exec -- dune install
+
 format:
 	opam exec -- dune build @fmt --auto-promote || true
 
