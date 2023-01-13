@@ -25,7 +25,7 @@
 
 (** {1:timespans POSIX time spans} *)
 
-type span
+type span = Z.t * Z.t
 (** The type for signed picosecond precision POSIX time spans. A value
     of this type represent the POSIX duration between two POSIX
     timestamps. *)
@@ -146,7 +146,7 @@ end
 
 (** {1:timestamps POSIX timestamps} *)
 
-type t
+type t = Z.t * Z.t
 (** The type for picosecond precision POSIX timestamps in the range
     \[{!min};{!max}\]. Note that POSIX timestamps, and hence values of
     this type, are by definition always on the UTC timeline. *)
