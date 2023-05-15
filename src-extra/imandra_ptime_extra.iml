@@ -16,11 +16,28 @@ let ps_count_in_ps = 1
 let ps_count_in_ns = 1_000
 let ps_count_in_us = 1_000_000
 let ps_count_in_ms = 1_000_000_000
-(* let ps_count_in_s = 1_000_000_000_000  *)
+let ps_count_in_s = 1_000_000_000_000
 let ms_count_in_day = 86_400_000
 let us_count_in_day = 86_400_000_000
 let ns_count_in_day = 86_400_000_000_000
 let ps_count_in_day = 86_400_000_000_000_000
+let s_count_in_day = 86_400
+
+(** Possible weeks in the month *)
+type week = Week_1 | Week_2 | Week_3 | Week_4 | Week_5
+
+let compare_week w1 w2 =
+  if w1 = w2 then 0
+  else
+    match (w1, w2) with
+    | Week_1, _ -> -1
+    | Week_2, Week_1 -> 1
+    | Week_2, _ -> -1
+    | Week_3, (Week_1 | Week_2) -> 1
+    | Week_3, _ -> -1
+    | Week_4, (Week_1 | Week_2 | Week_3) -> 1
+    | Week_4, _ -> -1
+    | Week_5, _ -> 1
 
 (** Ptimes created by the smart constructors are valid, but we need an explicit
     is_valid function for Imandra instances and theorems.
@@ -64,7 +81,6 @@ module Span = struct
   let to_int_ns = to_int_x (ns_count_in_day, ps_count_in_ns)
   let of_int_ps = of_int_x (ps_count_in_day, ps_count_in_ps)
   let to_int_ps = to_int_x (ps_count_in_day, ps_count_in_ps)
-
   let is_shorter t ~than = compare t than = -1
   let is_longer t ~than = compare t than = 1
 end

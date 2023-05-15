@@ -46,9 +46,7 @@ let jd_of_date (year, month, day) =
   + (365 * y) + (y / 4) - (y / 100) + (y / 400) - 32045
 
 let jd_posix_epoch = 2_440_588 (* the Julian day of the POSIX epoch *)
-
 let jd_ptime_min = 1_721_060 (* the Julian day of Ptime.min *)
-
 let jd_ptime_max = 5_373_484 (* the Julian day of Ptime.max *)
 
 (* Picosecond precision POSIX timestamps and time span representation.
@@ -92,9 +90,7 @@ let ps_day_max = 86_399_999_999_999_999
 let day_min = jd_ptime_min - jd_posix_epoch
 let day_max = jd_ptime_max - jd_posix_epoch
 let epoch = (0, 0) (* 1970-01-01 00:00:00 UTC *)
-
 let min = (day_min, 0) (* 0000-01-01 00:00:00 UTC *)
-
 let max = (day_max, ps_day_max) (* 9999-12-31 23:59:59 UTC *)
 
 (* POSIX time spans *)
@@ -253,21 +249,21 @@ type time = (int * int * int) * tz_offset_s
 let max_month_day y m =
   (* max day number in a given year's month. *)
   let is_leap_year y = y mod 4 = 0 && (y mod 100 <> 0 || y mod 400 = 0) in
-    match m with
-    | 1 -> 31
-    | 2 when is_leap_year y -> 29
-    | 2 -> 28
-    | 3 -> 31
-    | 4 -> 30
-    | 5 -> 31
-    | 6 -> 30
-    | 7 -> 31
-    | 8 -> 31
-    | 9 -> 30
-    | 10 -> 31
-    | 11 -> 30
-    | 12 -> 31
-    | _ -> 31
+  match m with
+  | 1 -> 31
+  | 2 when is_leap_year y -> 29
+  | 2 -> 28
+  | 3 -> 31
+  | 4 -> 30
+  | 5 -> 31
+  | 6 -> 30
+  | 7 -> 31
+  | 8 -> 31
+  | 9 -> 30
+  | 10 -> 31
+  | 11 -> 30
+  | 12 -> 31
+  | _ -> 31
 
 let is_date_valid (y, m, d) =
   0 <= y && y <= 9999 && 1 <= m && m <= 12 && 1 <= d && d <= max_month_day y m

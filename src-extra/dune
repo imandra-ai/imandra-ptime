@@ -2,4 +2,5 @@
  (name imandra_ptime_extra)
  (public_name imandra-ptime.extra)
  (modules imandra_ptime_extra)
+ (flags :standard -warn-error -A+37 -w -37)
  (libraries imandra-ptime imandra-prelude))
