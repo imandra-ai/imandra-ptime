@@ -20,6 +20,14 @@ val ns_count_in_day : Z.t
 val ps_count_in_day : Z.t
 val s_count_in_day : Z.t
 
+module Infix : sig
+  val ( < ) : t -> t -> bool
+  val ( > ) : t -> t -> bool
+  val ( = ) : t -> t -> bool
+  val ( <= ) : t -> t -> bool
+  val ( >= ) : t -> t -> bool
+end
+
 type week = Week_1 | Week_2 | Week_3 | Week_4 | Week_5
 
 val compare_week : week -> week -> Z.t
