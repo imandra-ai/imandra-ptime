@@ -23,6 +23,14 @@ let ns_count_in_day = 86_400_000_000_000
 let ps_count_in_day = 86_400_000_000_000_000
 let s_count_in_day = 86_400
 
+module Infix = struct
+  let ( < ) t1 t2 = Imandra_ptime.compare t1 t2 < 0
+  let ( > ) t1 t2 = Imandra_ptime.compare t1 t2 > 0
+  let ( = ) = Imandra_ptime.equal
+  let ( <= ) t1 t2 = Imandra_ptime.compare t1 t2 <= 0
+  let ( >= ) t1 t2 = Imandra_ptime.compare t1 t2 >= 0
+end
+
 (** Possible weeks in the month *)
 type week = Week_1 | Week_2 | Week_3 | Week_4 | Week_5
 
