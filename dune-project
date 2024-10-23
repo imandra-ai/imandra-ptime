@@ -19,4 +19,4 @@
 (package
  (name imandra-ptime)
  (synopsis "Imandra IML-compatible, verified version of the Ptime library")
- (depends imandra-prelude ptime))
+ (depends imandra-prelude ptime (imandra-extract :build)))
