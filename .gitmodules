@@ -3,4 +3,4 @@
 	url = https://github.com/AestheticIntegration/imandra-prelude.git
 [submodule "imandra-ptime-src"]
 	path = src
-	url = git@github.com:imandra-ai/imandra-ptime-src.git
+	url = https://github.com/imandra-ai/imandra-ptime-src.git
