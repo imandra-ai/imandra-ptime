@@ -1,36 +1,7 @@
 (lang dune 2.9)
 
-(name imandra-ptime)
-
-(generate_opam_files true)
-
-(dialect
- (name imandra)
- (implementation
-  (extension iml)
-  (preprocess
-   (system "imandra-extract %{input-file}"))
-  (format
-   (system "ocamlformat %{input-file}")))
- (interface
-  (extension "imli")))
-
-(license proprietary)
-
-(maintainers "The Imandra team <tech@imandra.ai>")
-
-(bug_reports "The Imandra team <tech@imandra.ai>")
-
-(authors "The Imandra team <tech@imandra.ai>")
-
-(homepage "https://imandra.ai")
-
-(version 1.1)
-
-(package
- (name imandra-ptime)
- (synopsis "Imandra IML-compatible, verified version of the Ptime library")
- (depends
-  imandra-prelude
-  ptime
-  (imandra-extract :build)))
+; Composition root only. The imandra-ptime package -- source, dialect,
+; package stanza, generated opam file -- lives in the imandra-ptime-src
+; submodule; defining it here too would make dune reject the workspace
+; ("package imandra-ptime is defined more than once"). This repo just
+; composes the source with its deps (vendor/imandra-prelude) for dev/CI.

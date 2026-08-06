@@ -12,4 +12,4 @@ _opam:
 	opam switch set-invariant ocaml-base-compiler.4.12.1
 
 opam-install-deps: _opam
-	opam install . ./vendor/imandra-prelude --deps-only --yes
+	opam install ./src ./vendor/imandra-prelude --deps-only --yes
